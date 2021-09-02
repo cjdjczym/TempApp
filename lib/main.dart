@@ -9,15 +9,9 @@ import 'package:temperature_app/logic_extension.dart';
 import 'package:temperature_app/ui_extension.dart';
 
 void main() {
-  FlutterError.onError = (FlutterErrorDetails details) async {
-    Zone.current.handleUncaughtError(details.exception, details.stack);
-  };
-  runZonedGuarded<void>(() {
+  runZoned<void>(() {
     WidgetsFlutterBinding.ensureInitialized();
     runApp(TempApp());
-  }, (Object error, StackTrace stack) {
-    TempApp.logs.add(error);
-    TempApp.logs.add(stack.toString());
   }, zoneSpecification: ZoneSpecification(print: (_, __, ___, line) {
     if (TempApp.logs.length > 30) TempApp.logs.clear();
     TempApp.logs.add(line);
@@ -44,10 +38,12 @@ class MainPage extends StatelessWidget {
     TempApp.screenWidth = size.width;
     TempApp.screenHeight = size.height;
     return Scaffold(
-        body: PageView(
-            scrollDirection: Axis.horizontal,
-            physics: BouncingScrollPhysics(),
-            children: [TempWidget(), CameraMain()]));
+      // body: TempWidget(),
+      body: PageView(
+          scrollDirection: Axis.horizontal,
+          physics: BouncingScrollPhysics(),
+          children: [TempWidget(), CameraMain()]),
+    );
     // return CameraWidget();
   }
 }
@@ -60,7 +56,7 @@ class TempWidget extends StatefulWidget {
 class _TempWidgetState extends State<TempWidget> {
   Socket socket;
   bool flag = false;
-  List<double> bufferList = List();
+  final List<double> bufferList = List();
 
   connect(TempNotifier notifier) async {
     const IP = "192.168.43.2";
@@ -79,7 +75,7 @@ class _TempWidgetState extends State<TempWidget> {
         }
         if (bufferList.length == 768) {
           // print(
-              // "==========================成功接收一组数据=============================");
+          // "==========================成功接收一组数据=============================");
           // print(bufferList.toString());
           // print(
           //     "======================================================================");
@@ -101,13 +97,21 @@ class _TempWidgetState extends State<TempWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Container(
-                  height: canvasHeight,
-                  child: notifier.dataList == null
-                      ? Container()
-                      : CustomPaint(
-                          size: Size(TempApp.screenWidth, canvasHeight),
-                          painter: TempPainter(notifier))),
+              Stack(
+                children: [
+                  Container(
+                      height: canvasHeight,
+                      child: notifier.dataList == null
+                          ? Container()
+                          : CustomPaint(
+                              size: Size(TempApp.screenWidth, canvasHeight),
+                              painter: TempPainter(notifier))),
+                  Container(
+                    height: canvasHeight,
+                    child: notifier.showCamera ? CameraMain() : Container(),
+                  )
+                ],
+              ),
               Container(height: 10),
               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 Container(
@@ -148,6 +152,8 @@ class _TempWidgetState extends State<TempWidget> {
               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 // button('刷新', () => setState(() {})),
                 // button('清除', () => setState(() => TempApp.logs.clear())),
+                button(notifier.showCamera ? '隐藏' : '显示',
+                    () => notifier.showCamera = !notifier.showCamera),
                 button('测试',
                     () => notifier.dataList = test.map((e) => e + 10).toList())
               ]),
