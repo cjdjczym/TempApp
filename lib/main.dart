@@ -55,8 +55,10 @@ class MainPage extends StatelessWidget {
               ),
             )
           ]),
+      backgroundColor: Color.fromRGBO(98, 103, 124, 1.0),
       body: ChangeNotifierProvider<TempNotifier>(
-          create: (ctx) => TempNotifier(), child: TempWidget()),
+          create: (ctx) => TempNotifier(),
+          child: SafeArea(child: TempWidget())),
     );
   }
 }
@@ -107,164 +109,191 @@ class TempWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     var notifier = Provider.of<TempNotifier>(context, listen: false);
     var canvasHeight = TempApp.screenWidth * 512 / 384;
-    return SafeArea(
-      child: DefaultTextStyle(
-        style: TextStyle(fontSize: 12),
-        child: Container(
-          color: Color.fromRGBO(98, 103, 124, 1.0),
-          child: Column(
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                  color: Colors.blue, width: TempApp.decorationWidth)),
+          child: Stack(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(
-                        color: Colors.blue, width: TempApp.decorationWidth)),
-                child: Stack(
-                  children: [
-                    ValueListenableBuilder(
-                        valueListenable: cameraState,
-                        builder: (_, value, __) {
-                          return SizedBox(
-                            height: canvasHeight,
-                            child: value ? CameraMain() : Container(),
-                          );
-                        }),
-                    Container(
+              ValueListenableBuilder(
+                  valueListenable: cameraState,
+                  builder: (_, value, __) {
+                    return SizedBox(
                       height: canvasHeight,
-                      child: Consumer<TempNotifier>(
-                        builder: (context, tempNotifier, _) {
-                          if (notifier.dataList == null) {
-                            return Container();
-                          } else {
-                            return RepaintBoundary(
-                              child: CustomPaint(
-                                  size: Size(TempApp.screenWidth, canvasHeight),
-                                  painter: TempPainter(tempNotifier)),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 15),
-                      child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('相机'),
-                            ValueListenableBuilder(
-                              valueListenable: cameraState,
-                              builder: (_, value, __) {
-                                return Switch(
-                                  value: value,
-                                  onChanged: (bool newValue) =>
-                                      cameraState.value = newValue,
-                                  activeColor: Colors.deepPurple,
-                                  inactiveThumbColor: Colors.grey[400],
-                                  activeTrackColor: Colors.deepPurple[200],
-                                  inactiveTrackColor: Colors.white,
-                                );
-                              },
-                            ),
-                            SizedBox(height: 15),
-                            Text('人脸识别'),
-                            ValueListenableBuilder(
-                              valueListenable: faceState,
-                              builder: (_, value, __) {
-                                return Switch(
-                                  value: value,
-                                  onChanged: (bool newValue) {
-                                    newValue
-                                        ? TempApp.faceOpacity = 1.0
-                                        : TempApp.faceOpacity = 0.0;
-                                    faceState.value = newValue;
-                                  },
-                                  activeColor: Colors.deepPurple,
-                                  inactiveThumbColor: Colors.grey[400],
-                                  activeTrackColor: Colors.deepPurple[200],
-                                  inactiveTrackColor: Colors.white,
-                                );
-                              },
-                            )
-                          ]),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: ValueListenableBuilder(
-                          valueListenable: buttonState,
-                          builder: (context, index, _) {
-                            return ProgressButton.icon(
-                              maxWidth: 135.0,
-                              state: states[index],
-                              iconedButtons: {
-                                ButtonState.idle: index == 0
-                                    ? IconedButton(
-                                        text: "Connect",
-                                        icon:
-                                            Icon(Icons.send, color: Colors.white),
-                                        color: Colors.deepPurple)
-                                    : IconedButton(
-                                        text: "Disconnect",
-                                        icon: Icon(Icons.access_time,
-                                            color: Colors.white),
-                                        color: Colors.deepPurple),
-                                ButtonState.loading: IconedButton(
-                                    text: "Loading",
-                                    color: Colors.deepPurple[700]),
-                                ButtonState.fail: IconedButton(
-                                    text: "Failed",
-                                    icon: Icon(Icons.cancel, color: Colors.white),
-                                    color: Colors.red[300]),
-                                ButtonState.success: IconedButton(
-                                    text: "Success",
-                                    icon: Icon(
-                                      Icons.check_circle,
-                                      color: Colors.white,
-                                    ),
-                                    color: Colors.green[400])
-                              },
-                              onPressed: () async {
-                                if (index == 0) {
-                                  buttonState.value = 1;
-                                  await Future.delayed(
-                                      Duration(milliseconds: 500));
-                                  var flag = await connect(notifier);
-                                  if (flag) {
-                                    buttonState.value = 3;
-                                    await Future.delayed(Duration(seconds: 2));
-                                    notifier.socket.write('C');
-                                    buttonState.value = 4;
-                                  } else {
-                                    buttonState.value = 2;
-                                    await Future.delayed(Duration(seconds: 2));
-                                    buttonState.value = 0;
-                                  }
-                                } else if (index == 4) {
-                                  buttonState.value = 1;
-                                  notifier.socket.write('Q');
-                                  await Future.delayed(
-                                      Duration(milliseconds: 500));
-                                  notifier.dataList = List();
-                                  buttonState.value = 0;
-                                }
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
+                      child: value ? CameraMain() : Container(),
+                    );
+                  }),
+              Container(
+                height: canvasHeight,
+                child: Consumer<TempNotifier>(
+                  builder: (context, tempNotifier, _) {
+                    if (notifier.dataList == null) {
+                      return Container();
+                    } else {
+                      return RepaintBoundary(
+                        child: CustomPaint(
+                            size: Size(TempApp.screenWidth, canvasHeight),
+                            painter: TempPainter(tempNotifier)),
+                      );
+                    }
+                  },
                 ),
               ),
             ],
           ),
         ),
-      ),
+        Expanded(
+          child: DefaultTextStyle(
+            style: TextStyle(fontSize: 12),
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 3),
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('相机'),
+                        ValueListenableBuilder(
+                          valueListenable: cameraState,
+                          builder: (_, value, __) {
+                            return Switch(
+                              value: value,
+                              onChanged: (bool newValue) =>
+                                  cameraState.value = newValue,
+                              activeColor: Colors.deepPurple,
+                              inactiveThumbColor: Colors.grey[400],
+                              activeTrackColor: Colors.deepPurple[100],
+                              inactiveTrackColor: Colors.white,
+                            );
+                          },
+                        ),
+                        SizedBox(height: 15),
+                        Text('人脸识别'),
+                        ValueListenableBuilder(
+                          valueListenable: faceState,
+                          builder: (_, value, __) {
+                            return Switch(
+                              value: value,
+                              onChanged: (bool newValue) {
+                                newValue
+                                    ? TempApp.faceOpacity = 1.0
+                                    : TempApp.faceOpacity = 0.0;
+                                faceState.value = newValue;
+                              },
+                              activeColor: Colors.deepPurple,
+                              inactiveThumbColor: Colors.grey[400],
+                              activeTrackColor: Colors.deepPurple[100],
+                              inactiveTrackColor: Colors.white,
+                            );
+                          },
+                        )
+                      ]),
+                ),
+                Expanded(
+                  child: Center(
+                    child: ValueListenableBuilder(
+                      valueListenable: buttonState,
+                      builder: (context, index, _) {
+                        return ProgressButton.icon(
+                          maxWidth: 135.0,
+                          state: states[index],
+                          iconedButtons: {
+                            ButtonState.idle: index == 0
+                                ? IconedButton(
+                                    text: "Connect",
+                                    icon: Icon(Icons.send, color: Colors.white),
+                                    color: Colors.deepPurple)
+                                : IconedButton(
+                                    text: "Disconnect",
+                                    icon: Icon(Icons.access_time,
+                                        color: Colors.white),
+                                    color: Colors.deepPurple),
+                            ButtonState.loading: IconedButton(
+                                text: "Loading", color: Colors.deepPurple[700]),
+                            ButtonState.fail: IconedButton(
+                                text: "Failed",
+                                icon: Icon(Icons.cancel, color: Colors.white),
+                                color: Colors.red[300]),
+                            ButtonState.success: IconedButton(
+                                text: "Success",
+                                icon: Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                ),
+                                color: Colors.green[400])
+                          },
+                          onPressed: () async {
+                            if (index == 0) {
+                              buttonState.value = 1;
+                              await Future.delayed(Duration(milliseconds: 500));
+                              var flag = await connect(notifier);
+                              if (flag) {
+                                buttonState.value = 3;
+                                await Future.delayed(Duration(seconds: 2));
+                                notifier.socket.write('C');
+                                buttonState.value = 4;
+                              } else {
+                                buttonState.value = 2;
+                                await Future.delayed(Duration(seconds: 2));
+                                buttonState.value = 0;
+                              }
+                            } else if (index == 4) {
+                              buttonState.value = 1;
+                              notifier.socket.write('Q');
+                              await Future.delayed(Duration(milliseconds: 500));
+                              notifier.dataList = List();
+                              buttonState.value = 0;
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Consumer<TempNotifier>(
+                    builder: (_, notifier, __) {
+                      return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('伪彩方案'),
+                            SizedBox(
+                              width: 75,
+                              child: RaisedButton(
+                                child: Text(notifier.makerName,
+                                    style: TextStyle(fontSize: 13)),
+                                onPressed: () {},
+                                color: Colors.deepPurple,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20)),
+                              ),
+                            ),
+                            SizedBox(height: 15),
+                            Text('插值算法'),
+                            SizedBox(
+                              width: 75,
+                              child: RaisedButton(
+                                child: Text(notifier.handlerName,
+                                    style: TextStyle(fontSize: 13)),
+                                onPressed: () {},
+                                color: Colors.deepPurple,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20)),
+                              ),
+                            ),
+                          ]);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
