@@ -145,7 +145,7 @@ class FacePainter extends CustomPainter {
     Paint paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
-      ..color = Colors.red;
+      ..color = Colors.red.withOpacity(TempApp.faceOpacity);
     for (Rect rect in rects) {
       var newRect = scaleRect(newSize, rect);
       if (newRect.top + newRect.height > newSize.height) continue;
