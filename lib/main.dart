@@ -1,11 +1,10 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:temperature_app/camera_widget.dart';
 import 'package:temperature_app/temp_notifier.dart';
-import 'package:temperature_app/logic_extension.dart';
-import 'package:temperature_app/ui_extension.dart';
+import 'package:progress_state_button/iconed_button.dart';
+import 'package:progress_state_button/progress_button.dart';
 
 void main() {
   runApp(TempApp());
@@ -16,6 +15,7 @@ class TempApp extends StatelessWidget {
   static double decorationWidth = 4;
   static double screenWidth;
   static double screenHeight;
+  static double faceOpacity = 1.0;
 
   @override
   Widget build(BuildContext context) {
@@ -62,12 +62,26 @@ class MainPage extends StatelessWidget {
 }
 
 class TempWidget extends StatelessWidget {
-  final ValueNotifier<bool> showCamera = ValueNotifier(false);
+  static const List<ButtonState> states = [
+    ButtonState.idle, // click to connect
+    ButtonState.loading,
+    ButtonState.fail,
+    ButtonState.success,
+    ButtonState.idle, // click to disconnect
+  ];
   static const IP = "192.168.43.2";
   final List<double> bufferList = List();
+  final ValueNotifier<int> buttonState = ValueNotifier(0);
+  final ValueNotifier<bool> cameraState = ValueNotifier(false);
+  final ValueNotifier<bool> faceState = ValueNotifier(true);
 
-  connect(TempNotifier notifier) async {
-    notifier.socket = await Socket.connect(IP, 80);
+  Future<bool> connect(TempNotifier notifier) async {
+    try {
+      notifier.socket =
+          await Socket.connect(IP, 80, timeout: Duration(seconds: 5));
+    } catch (e) {
+      return false;
+    }
     var flag = false;
     notifier.socket.listen((event) {
       if (event[0] == 66) {
@@ -86,6 +100,7 @@ class TempWidget extends StatelessWidget {
         }
       }
     });
+    return true;
   }
 
   @override
@@ -98,7 +113,6 @@ class TempWidget extends StatelessWidget {
         child: Container(
           color: Color.fromRGBO(98, 103, 124, 1.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
                 decoration: BoxDecoration(
@@ -108,7 +122,7 @@ class TempWidget extends StatelessWidget {
                 child: Stack(
                   children: [
                     ValueListenableBuilder(
-                        valueListenable: showCamera,
+                        valueListenable: cameraState,
                         builder: (_, value, __) {
                           return SizedBox(
                             height: canvasHeight,
@@ -134,78 +148,125 @@ class TempWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                Container(
-                  width: 70,
-                  height: 32,
-                  child: FlatButton(
-                      height: 32,
-                      onPressed: () => connect(notifier),
-                      color: Colors.green[300],
-                      child: Text('start')),
+              Expanded(
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 15),
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('相机'),
+                            ValueListenableBuilder(
+                              valueListenable: cameraState,
+                              builder: (_, value, __) {
+                                return Switch(
+                                  value: value,
+                                  onChanged: (bool newValue) =>
+                                      cameraState.value = newValue,
+                                  activeColor: Colors.deepPurple,
+                                  inactiveThumbColor: Colors.grey[400],
+                                  activeTrackColor: Colors.deepPurple[200],
+                                  inactiveTrackColor: Colors.white,
+                                );
+                              },
+                            ),
+                            SizedBox(height: 15),
+                            Text('人脸识别'),
+                            ValueListenableBuilder(
+                              valueListenable: faceState,
+                              builder: (_, value, __) {
+                                return Switch(
+                                  value: value,
+                                  onChanged: (bool newValue) {
+                                    newValue
+                                        ? TempApp.faceOpacity = 1.0
+                                        : TempApp.faceOpacity = 0.0;
+                                    faceState.value = newValue;
+                                  },
+                                  activeColor: Colors.deepPurple,
+                                  inactiveThumbColor: Colors.grey[400],
+                                  activeTrackColor: Colors.deepPurple[200],
+                                  inactiveTrackColor: Colors.white,
+                                );
+                              },
+                            )
+                          ]),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: ValueListenableBuilder(
+                          valueListenable: buttonState,
+                          builder: (context, index, _) {
+                            return ProgressButton.icon(
+                              maxWidth: 135.0,
+                              state: states[index],
+                              iconedButtons: {
+                                ButtonState.idle: index == 0
+                                    ? IconedButton(
+                                        text: "Connect",
+                                        icon:
+                                            Icon(Icons.send, color: Colors.white),
+                                        color: Colors.deepPurple)
+                                    : IconedButton(
+                                        text: "Disconnect",
+                                        icon: Icon(Icons.access_time,
+                                            color: Colors.white),
+                                        color: Colors.deepPurple),
+                                ButtonState.loading: IconedButton(
+                                    text: "Loading",
+                                    color: Colors.deepPurple[700]),
+                                ButtonState.fail: IconedButton(
+                                    text: "Failed",
+                                    icon: Icon(Icons.cancel, color: Colors.white),
+                                    color: Colors.red[300]),
+                                ButtonState.success: IconedButton(
+                                    text: "Success",
+                                    icon: Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                    ),
+                                    color: Colors.green[400])
+                              },
+                              onPressed: () async {
+                                if (index == 0) {
+                                  buttonState.value = 1;
+                                  await Future.delayed(
+                                      Duration(milliseconds: 500));
+                                  var flag = await connect(notifier);
+                                  if (flag) {
+                                    buttonState.value = 3;
+                                    await Future.delayed(Duration(seconds: 2));
+                                    notifier.socket.write('C');
+                                    buttonState.value = 4;
+                                  } else {
+                                    buttonState.value = 2;
+                                    await Future.delayed(Duration(seconds: 2));
+                                    buttonState.value = 0;
+                                  }
+                                } else if (index == 4) {
+                                  buttonState.value = 1;
+                                  notifier.socket.write('Q');
+                                  await Future.delayed(
+                                      Duration(milliseconds: 500));
+                                  notifier.dataList = List();
+                                  buttonState.value = 0;
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                button('A', notifier),
-                button('B', notifier),
-                button('C', notifier)
-              ]),
-              Container(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                button('D', notifier),
-                button('E', notifier),
-                button('P', notifier),
-                button('Q', notifier)
-              ]),
-              Container(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                button('彩虹1', notifier, () => notifier.colorMaker = rainbow1),
-                button('彩虹2', notifier, () => notifier.colorMaker = rainbow2),
-                button('彩虹3', notifier, () => notifier.colorMaker = rainbow3),
-                button('灰度', notifier, () => notifier.colorMaker = gray)
-              ]),
-              // Container(height: 10),
-              // Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              //   button('伪彩1', notifier, () => notifier.colorMaker = pseudo1),
-              //   button('伪彩2', notifier, () => notifier.colorMaker = pseudo2),
-              //   button('金属1', notifier, () => notifier.colorMaker = metal1),
-              //   button('金属2', notifier, () => notifier.colorMaker = metal2)
-              // ]),
-              Container(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                ValueListenableBuilder(
-                  valueListenable: showCamera,
-                  builder: (_, value, __) {
-                    return SizedBox(
-                        width: 70,
-                        height: 32,
-                        child: FlatButton(
-                            height: 32,
-                            color: Colors.green[300],
-                            onPressed: () {
-                              showCamera.value = !showCamera.value;
-                            },
-                            child: Text(value ? '隐藏' : '显示')));
-                  },
-                ),
-                button('测试', notifier,
-                    () => notifier.dataList = test.map((e) => e + 10).toList())
-              ])
+              ),
             ],
           ),
         ),
       ),
     );
   }
-
-  Widget button(String abc, TempNotifier notifier, [Function fun]) => Container(
-        width: 70,
-        height: 32,
-        child: FlatButton(
-            height: 32,
-            onPressed: () => fun == null ? notifier.socket.write(abc) : fun(),
-            color: Colors.green[300],
-            child: Text(abc)),
-      );
 }
 
 class TempPainter extends CustomPainter {
@@ -213,11 +274,12 @@ class TempPainter extends CustomPainter {
   final ColorMaker colorMaker;
 
   TempPainter(TempNotifier notifier)
-      : list = notifier.refactorHandler(notifier.dataList),
+      : list = notifier.refactor(notifier.dataList),
         colorMaker = notifier.colorMaker;
 
   @override
   void paint(Canvas canvas, Size size) async {
+    if (list.isEmpty) return;
     Paint paint = Paint()..style = PaintingStyle.fill;
     int x = list.length, y = list[0].length;
     double sliceX = size.width / x, sliceY = size.height / y;
@@ -233,17 +295,3 @@ class TempPainter extends CustomPainter {
   @override
   bool shouldRepaint(TempPainter oldDelegate) => true;
 }
-
-// class TempPainter extends CustomPainter {
-//   final ui.Image image;
-//
-//   TempPainter(TempNotifier notifier) : image = notifier.image;
-//
-//   @override
-//   void paint(Canvas canvas, Size size) async {
-//     canvas.drawImage(image, Offset.zero, Paint());
-//   }
-//
-//   @override
-//   bool shouldRepaint(TempPainter oldDelegate) => true;
-// }
