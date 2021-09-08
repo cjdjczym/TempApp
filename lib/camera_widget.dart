@@ -28,8 +28,8 @@ class _CameraMainState extends State<CameraMain> {
 
   getCameras() async {
     var cameras = await availableCameras();
-    controller =
-        CameraController(cameras[0], ResolutionPreset.medium, enableAudio: false);
+    controller = CameraController(cameras[0], ResolutionPreset.medium,
+        enableAudio: false);
     await controller.initialize();
     var isProcess = false;
     controller.startImageStream((image) async {
@@ -92,21 +92,21 @@ class _CameraMainState extends State<CameraMain> {
         size: Size(width, width * 512 / 384),
 
         /// 放大到原来大小
-        child: Container(
+        child: SizedBox(
           width: width,
           height: height,
           child: SizedBox.expand(
-            /// 截取一半宽度
+            /// 截取宽度
             child: FittedBox(
               fit: BoxFit.fitHeight,
-              child: Container(
+              child: SizedBox(
                 width: width,
                 height: height / contentScale,
 
-                /// 截取一半高度
+                /// 截取高度
                 child: FittedBox(
                   fit: BoxFit.fitWidth,
-                  child: Container(
+                  child: SizedBox(
                     width: width,
                     height: height,
                     child: CameraPreview(controller),
@@ -127,10 +127,10 @@ class FacePainter extends CustomPainter {
 
   FacePainter(this.rects, this.imgSize);
 
-  Rect scaleRect(Size size, Rect rect) {
+  Rect scaleRect(Size newSize, Rect rect) {
     /// 由于相机图像旋转90°，这里的[imgSize.height]其实就是图像宽度
     /// 又由于Stack中使用了统一的[AspectRatio]，所以高度之比也是[scale]
-    double s = size.width / imgSize.height, c = 1 / TempApp.contentScale;
+    double s = newSize.width / imgSize.height, c = 1 / TempApp.contentScale;
     Rect newRect = Rect.fromLTWH(
         (rect.left - imgSize.height * (1 - c) / 2) * s / c,
         (rect.top - imgSize.width * (1 - c) / 2) * s / c,
@@ -141,13 +141,14 @@ class FacePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    var newSize = Size(size.width + TempApp.decorationWidth * 2, size.height);
     Paint paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..color = Colors.red;
     for (Rect rect in rects) {
-      var newRect = scaleRect(size, rect);
-      if(newRect.top + newRect.height > size.height) continue;
+      var newRect = scaleRect(newSize, rect);
+      if (newRect.top + newRect.height > newSize.height) continue;
       canvas.drawRect(newRect, paint);
     }
   }
