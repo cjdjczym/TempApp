@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
@@ -9,21 +10,28 @@ class CameraMain extends StatefulWidget {
 }
 
 class _CameraMainState extends State<CameraMain> {
+  StreamController streamController;
   CameraController controller;
-  CustomPainter painter;
-  var isProcess = false;
 
   @override
   void initState() {
     super.initState();
+    streamController = StreamController<FacePainter>();
     getCameras();
+  }
+
+  @override
+  void dispose() {
+    streamController.close();
+    super.dispose();
   }
 
   getCameras() async {
     var cameras = await availableCameras();
-    controller = CameraController(cameras[0], ResolutionPreset.high);
+    controller =
+        CameraController(cameras[0], ResolutionPreset.medium, enableAudio: false);
     await controller.initialize();
-
+    var isProcess = false;
     controller.startImageStream((image) async {
       if (mounted && !isProcess) {
         isProcess = true;
@@ -33,11 +41,10 @@ class _CameraMainState extends State<CameraMain> {
         List<Face> faces = await detector.processImage(visionImage);
         List<Rect> rects = faces.map((face) => face.boundingBox).toList();
         isProcess = false;
-        setState(() {
-          painter = FacePainter(rects, controller.value.previewSize);
-        });
+        streamController.add(FacePainter(rects, controller.value.previewSize));
       }
     });
+    setState(() {});
   }
 
   FirebaseVisionImageMetadata buildMetaData(
@@ -62,54 +69,26 @@ class _CameraMainState extends State<CameraMain> {
     return SafeArea(
       child: Stack(
         children: <Widget>[
-          formatCameraPreview(controller, 2),
-          CustomPaint(size: Size.infinite, painter: painter)
+          formatCameraPreview(controller, TempApp.contentScale),
+          StreamBuilder(
+            stream: streamController.stream,
+            builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) =>
+                snapshot.hasData
+                    ? CustomPaint(size: Size.infinite, painter: snapshot.data)
+                    : SizedBox(),
+          )
         ],
       ),
     );
   }
 
-  Widget formatCameraPreview1(CameraController controller, double scale) {
+  Widget formatCameraPreview(CameraController controller, double contentScale) {
     var width = TempApp.screenWidth;
     var height = TempApp.screenWidth * controller.value.aspectRatio;
 
     /// 去掉下面多余的部分
     return ClipRect(
       child: SizedOverflowBox(
-        alignment: Alignment.topCenter,
-        size: Size(width, width * 512 / 384),
-
-        /// 放大到原来大小
-        child: Container(
-          width: width,
-          height: height,
-          child: Transform.scale(
-            scale: 2,
-            child: FractionallySizedBox(
-              widthFactor: 0.5,
-              heightFactor: 0.5,
-              child: FittedBox(
-                child: Container(
-                    width: width,
-                    height: height,
-                    child: CameraPreview(controller)),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // TODO FractionallySizedBox + FittedBox ?
-  Widget formatCameraPreview(CameraController controller, double scale) {
-    var width = TempApp.screenWidth;
-    var height = TempApp.screenWidth * controller.value.aspectRatio;
-
-    /// 去掉下面多余的部分
-    return ClipRect(
-      child: SizedOverflowBox(
-        alignment: Alignment.topCenter,
         size: Size(width, width * 512 / 384),
 
         /// 放大到原来大小
@@ -122,7 +101,7 @@ class _CameraMainState extends State<CameraMain> {
               fit: BoxFit.fitHeight,
               child: Container(
                 width: width,
-                height: height / scale,
+                height: height / contentScale,
 
                 /// 截取一半高度
                 child: FittedBox(
@@ -151,9 +130,12 @@ class FacePainter extends CustomPainter {
   Rect scaleRect(Size size, Rect rect) {
     /// 由于相机图像旋转90°，这里的[imgSize.height]其实就是图像宽度
     /// 又由于Stack中使用了统一的[AspectRatio]，所以高度之比也是[scale]
-    double scale = size.width / imgSize.height;
-    Rect newRect = Rect.fromLTRB(rect.left * scale, rect.top * scale,
-        rect.right * scale, rect.bottom * scale);
+    double s = size.width / imgSize.height, c = 1 / TempApp.contentScale;
+    Rect newRect = Rect.fromLTWH(
+        (rect.left - imgSize.height * (1 - c) / 2) * s / c,
+        (rect.top - imgSize.width * (1 - c) / 2) * s / c,
+        rect.width * s / c,
+        rect.height * s / c);
     return newRect;
   }
 
@@ -164,7 +146,9 @@ class FacePainter extends CustomPainter {
       ..strokeWidth = 3
       ..color = Colors.red;
     for (Rect rect in rects) {
-      canvas.drawRect(scaleRect(size, rect), paint);
+      var newRect = scaleRect(size, rect);
+      if(newRect.top + newRect.height > size.height) continue;
+      canvas.drawRect(newRect, paint);
     }
   }
 
