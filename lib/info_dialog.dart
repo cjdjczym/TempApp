@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:temperature_app/temp_notifier.dart';
 
 import 'main.dart';
 
@@ -38,7 +39,7 @@ class _InfoWidgetState extends State<_InfoWidget> {
   @override
   Widget build(BuildContext context) {
     var hintStyle =
-        TextStyle(color: Color.fromRGBO(201, 204, 209, 1), fontSize: 13);
+    TextStyle(color: Color.fromRGBO(201, 204, 209, 1), fontSize: 13);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -100,6 +101,26 @@ class _InfoWidgetState extends State<_InfoWidget> {
                   borderRadius: BorderRadius.circular(30)),
             )),
       ],
+    );
+  }
+}
+
+
+class DisplayDialog extends Dialog {
+  final List<List<double>> data;
+  final ColorMaker maker;
+
+  DisplayDialog(this.data, this.maker);
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 280,
+        height: 400,
+        child: CustomPaint(
+            painter: TempPainter(data, maker, true), size: Size(280, 400)),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:temperature_app/logic_extension.dart';
 import 'package:temperature_app/ui_extension.dart';
@@ -10,9 +11,33 @@ class TempNotifier with ChangeNotifier {
   // ignore: close_sinks
   Socket socket;
 
-  List<double> _dataList;
+  String min = '';
+  String max = '';
+  String avg = '';
+  String center = '';
+  bool normal = true;
+
+  List<double> _dataList = List();
 
   set dataList(List<double> newList) {
+    if (newList.isEmpty) {
+      min = '';
+      max = '';
+      avg = '';
+      center = '';
+      normal = true;
+      _dataList = List();
+      notifyListeners();
+      return;
+    }
+    min = newList.reduce(math.min).toStringAsFixed(2);
+    var maxValue = newList.reduce(math.max);
+    max = maxValue.toStringAsFixed(2);
+    var total = 0.0;
+    newList.forEach((e) => total += e);
+    avg = (total / newList.length).toStringAsFixed(2);
+    center = newList[(newList.length / 2).round()].toStringAsFixed(2);
+    normal = maxValue <= 37.2;
     _dataList = List()..addAll(newList);
     notifyListeners();
   }
@@ -31,7 +56,7 @@ class TempNotifier with ChangeNotifier {
 
   RefactorHandler get refactorHandler => _refactorHandler;
 
-  ColorMaker _colorMaker = rainbow1;
+  ColorMaker _colorMaker = rainbow2;
 
   set colorMaker(ColorMaker newMaker) {
     _colorMaker = newMaker;
