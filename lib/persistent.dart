@@ -4,8 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:temperature_app/main.dart';
 
 postRemote(UserDaily daily) async {
-  var dio = Dio()..options.baseUrl = '47.100.236.6:3305';
-  await dio.post('/api/user/daily', data: daily.toSimpleJson());
+  await Dio().post('http://47.100.236.6:3305/api/user/daily', data: daily.toSimpleJson());
 }
 
 saveLocal(SharedPreferences pref, UserDaily daily) async {
@@ -30,6 +29,10 @@ class UserDaily {
   String avg;
   String center;
   List<String> data;
+
+
+  UserDaily(this.name, this.address, this.date, this.normal, this.min, this.max,
+      this.avg, this.center, this.data);
 
   UserDaily.fromData(this.normal, this.min, this.max, this.avg, this.center,
       List<double> raw) {

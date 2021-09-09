@@ -13,6 +13,7 @@ class DisplayWidget extends StatelessWidget {
     return ListView.builder(
       itemCount: list.length,
       itemBuilder: (context, index) {
+        var abnormal = double.parse(list[index].max) > 37.2;
         return DefaultTextStyle(
           style: TextStyle(fontSize: 13, color: Colors.black),
           child: GestureDetector(
@@ -38,9 +39,27 @@ class DisplayWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(list[index].date,
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(list[index].date,
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                        abnormal
+                            ? Icon(Icons.warning_amber_rounded,
+                                color: Colors.red, size: 25)
+                            : Container(),
+                        abnormal
+                            ? Text("异常！",
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red))
+                            : Container(),
+                      ],
+                    ),
                     SizedBox(height: 5),
                     Row(children: [
                       SizedBox(

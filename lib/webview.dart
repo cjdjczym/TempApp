@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class WebWidget extends StatelessWidget {
-  static const URL = "https://www.baidu.com";
+  static const URL = "47.100.236.6:3000";
   WebViewController _controller;
 
   @override

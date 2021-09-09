@@ -11,7 +11,6 @@ import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
 import 'package:temperature_app/webview.dart';
 import 'display_widget.dart';
-import 'logic_extension.dart';
 
 void main() {
   runApp(TempApp());
@@ -114,6 +113,7 @@ class TempWidget extends StatelessWidget {
   final ValueNotifier<int> buttonState = ValueNotifier(0);
   final ValueNotifier<bool> cameraState = ValueNotifier(false);
   final ValueNotifier<bool> faceState = ValueNotifier(true);
+  final ValueNotifier<bool> warnState = ValueNotifier(false);
 
   Future<bool> connect(TempNotifier notifier) async {
     try {
@@ -187,6 +187,13 @@ class TempWidget extends StatelessWidget {
                       margin: const EdgeInsets.all(10),
                       child: Consumer<TempNotifier>(
                         builder: (_, tempNotifier, __) {
+                          if (notifier.max != '' &&
+                              double.parse(notifier.max) > 37.2 &&
+                              !warnState.value)
+                            WidgetsBinding.instance
+                                .addPostFrameCallback((timeStamp) {
+                              warnState.value = true;
+                            });
                           return DefaultTextStyle.merge(
                             style: TextStyle(fontWeight: FontWeight.bold),
                             child: Column(children: [
@@ -198,6 +205,32 @@ class TempWidget extends StatelessWidget {
                           );
                         },
                       ),
+                    ),
+                    ValueListenableBuilder(
+                      valueListenable: warnState,
+                      builder: (_, value, __) {
+                        if (!value) return Container();
+                        Future.delayed(Duration(seconds: 2))
+                            .then((_) => warnState.value = false);
+                        return Container(
+                          alignment: Alignment.topCenter,
+                          margin: const EdgeInsets.only(top: 20),
+                          child: Column(
+                            children: [
+                              Icon(Icons.warning_amber_rounded,
+                                  color: Colors.red, size: 30),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: Text('体温异常！',
+                                    style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 );
@@ -272,7 +305,6 @@ class TempWidget extends StatelessWidget {
                                     notifier.dataList);
                                 saveLocal(TempApp.pref, daily);
                                 postRemote(daily);
-                                // notifier.dataList = test;
                               }),
                         ),
                         SizedBox(height: 20),
