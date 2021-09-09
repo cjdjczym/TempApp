@@ -7,6 +7,7 @@ import 'package:temperature_app/swiper.dart';
 import 'package:temperature_app/temp_notifier.dart';
 import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
+import 'package:temperature_app/webview.dart';
 
 void main() {
   runApp(TempApp());
@@ -78,7 +79,7 @@ class MainPage extends StatelessWidget {
               create: (ctx) => TempNotifier(),
               child: SafeArea(child: TempWidget())),
           Container(),
-          Container()
+          WebWidget()
         ]),
       ),
     );
@@ -160,7 +161,7 @@ class TempWidget extends StatelessWidget {
                         child: CustomPaint(
                             size: Size(TempApp.screenWidth, canvasHeight),
                             painter:
-                                TempPainter(data, notifier.colorMaker, true)),
+                                TempPainter(data, notifier.colorMaker, false)),
                       );
                     }
                   },

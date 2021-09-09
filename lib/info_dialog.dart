@@ -44,7 +44,7 @@ class _InfoWidgetState extends State<_InfoWidget> {
       children: [
         Text("信息录入",
             style: TextStyle(
-                color: Color.fromRGBO(79, 88, 107, 1),
+                color: Colors.deepPurple[800],
                 fontWeight: FontWeight.bold,
                 fontSize: 17)),
         SizedBox(height: 20),
@@ -91,7 +91,7 @@ class _InfoWidgetState extends State<_InfoWidget> {
             margin: const EdgeInsets.only(top: 20, left: 25, right: 25),
             child: RaisedButton(
               onPressed: () => _saveInfo(context),
-              color: Color.fromRGBO(53, 59, 84, 1),
+              color: Colors.deepPurple,
               splashColor: Color.fromRGBO(103, 110, 150, 1),
               child: Text('保存',
                   style: TextStyle(color: Colors.white, fontSize: 13)),

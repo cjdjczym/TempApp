@@ -33,14 +33,15 @@ class MakerDialog extends Dialog {
                       child: RepaintBoundary(
                         child: CustomPaint(
                             size: Size(width - 100, height - 100),
-                            painter:
-                                TempPainter(data, notifier.makers[index], true)),
+                            painter: TempPainter(
+                                data, notifier.makers[index], true)),
                       ),
                     ),
                     Align(
                         alignment: Alignment.topCenter,
                         child: Text(notifier.getMakerName(index),
-                            style: TextStyle(fontSize: 25, color: Colors.white))),
+                            style:
+                                TextStyle(fontSize: 25, color: Colors.white))),
                   ],
                 );
               },
@@ -65,6 +66,15 @@ class MakerDialog extends Dialog {
   }
 }
 
+List<String> assets = [
+  'simpleData.png',
+  'simpleNearest.png',
+  'simpleLinear.png',
+  'singleRefactor.png',
+  'complexRefactor.png',
+  'doubleRefactor.png'
+];
+
 class HandlerDialog extends Dialog {
   final TempNotifier notifier;
 
@@ -84,23 +94,18 @@ class HandlerDialog extends Dialog {
             onTap: () => Navigator.pop(context),
             child: Swiper(
               itemBuilder: (context, index) {
-                var data = notifier.handlers[index](test);
                 return Stack(
                   children: [
                     Container(
                       alignment: Alignment.topCenter,
                       margin: EdgeInsets.only(top: 48, right: 3),
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                            size: Size(width - 100, height - 100),
-                            painter:
-                                TempPainter(data, notifier.colorMaker, true)),
-                      ),
+                      child: Image.asset('assets/images/${assets[index]}'),
                     ),
                     Align(
                         alignment: Alignment.topCenter,
                         child: Text(notifier.getHandlerName(index),
-                            style: TextStyle(fontSize: 25, color: Colors.white))),
+                            style:
+                                TextStyle(fontSize: 25, color: Colors.white))),
                   ],
                 );
               },
