@@ -89,7 +89,7 @@ class _CameraMainState extends State<CameraMain> {
     /// 去掉下面多余的部分
     return ClipRect(
       child: SizedOverflowBox(
-        size: Size(width, width * 512 / 384),
+        size: Size(width, width * 4 / 3),
 
         /// 放大到原来大小
         child: SizedBox(

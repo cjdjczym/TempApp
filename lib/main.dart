@@ -2,9 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:temperature_app/camera_widget.dart';
+import 'package:temperature_app/swiper.dart';
 import 'package:temperature_app/temp_notifier.dart';
 import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
+
+import 'logic_extension.dart';
 
 void main() {
   runApp(TempApp());
@@ -108,7 +111,7 @@ class TempWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var notifier = Provider.of<TempNotifier>(context, listen: false);
-    var canvasHeight = TempApp.screenWidth * 512 / 384;
+    var canvasHeight = TempApp.screenWidth * 4 / 3;
     return Column(
       children: [
         Container(
@@ -133,10 +136,12 @@ class TempWidget extends StatelessWidget {
                     if (notifier.dataList == null) {
                       return Container();
                     } else {
+                      var data = notifier.refactor(notifier.dataList);
                       return RepaintBoundary(
                         child: CustomPaint(
                             size: Size(TempApp.screenWidth, canvasHeight),
-                            painter: TempPainter(tempNotifier)),
+                            painter:
+                                TempPainter(data, notifier.colorMaker, true)),
                       );
                     }
                   },
@@ -264,9 +269,16 @@ class TempWidget extends StatelessWidget {
                             SizedBox(
                               width: 75,
                               child: RaisedButton(
-                                child: Text(notifier.makerName,
+                                child: Text(notifier.getMakerName(),
                                     style: TextStyle(fontSize: 13)),
-                                onPressed: () {},
+                                onPressed: () {
+                                  showDialog(
+                                          context: context,
+                                          barrierDismissible: true,
+                                          builder: (_) => MakerDialog(notifier))
+                                      .then(
+                                          (_) => notifier.notify(maker: true));
+                                },
                                 color: Colors.deepPurple,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20)),
@@ -277,9 +289,16 @@ class TempWidget extends StatelessWidget {
                             SizedBox(
                               width: 75,
                               child: RaisedButton(
-                                child: Text(notifier.handlerName,
+                                child: Text(notifier.getHandlerName(),
                                     style: TextStyle(fontSize: 13)),
-                                onPressed: () {},
+                                onPressed: () {
+                                  showDialog(
+                                      context: context,
+                                      barrierDismissible: true,
+                                      builder: (_) =>
+                                          HandlerDialog(notifier)).then(
+                                      (_) => notifier.notify(maker: false));
+                                },
                                 color: Colors.deepPurple,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20)),
@@ -299,23 +318,22 @@ class TempWidget extends StatelessWidget {
 }
 
 class TempPainter extends CustomPainter {
-  final List<List<double>> list;
+  final List<List<double>> data;
   final ColorMaker colorMaker;
+  final bool fill;
 
-  TempPainter(TempNotifier notifier)
-      : list = notifier.refactor(notifier.dataList),
-        colorMaker = notifier.colorMaker;
+  TempPainter(this.data, this.colorMaker, this.fill);
 
   @override
   void paint(Canvas canvas, Size size) async {
-    if (list.isEmpty) return;
+    if (data.isEmpty) return;
     Paint paint = Paint()..style = PaintingStyle.fill;
-    int x = list.length, y = list[0].length;
+    int x = data.length, y = data[0].length;
     double sliceX = size.width / x, sliceY = size.height / y;
     for (int i = 0; i < x; i++) {
       for (int j = 0; j < y; j++) {
         Rect rect = Offset(sliceX * i, sliceY * j) & Size(sliceX, sliceY);
-        paint.color = colorMaker(list[i][j]);
+        paint.color = colorMaker(data[i][j], fill ? 1.0 : null);
         canvas.drawRect(rect, paint);
       }
     }
