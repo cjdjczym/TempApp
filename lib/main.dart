@@ -2,18 +2,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:temperature_app/camera_widget.dart';
+import 'package:temperature_app/info_dialog.dart';
 import 'package:temperature_app/swiper.dart';
 import 'package:temperature_app/temp_notifier.dart';
 import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
-
-import 'logic_extension.dart';
 
 void main() {
   runApp(TempApp());
 }
 
 class TempApp extends StatelessWidget {
+  static String name;
+  static String address;
+
   static double contentScale = 1.5;
   static double decorationWidth = 4;
   static double screenWidth;
@@ -43,25 +45,42 @@ class MainPage extends StatelessWidget {
     var size = MediaQuery.of(context).size;
     TempApp.screenWidth = size.width;
     TempApp.screenHeight = size.height;
-    return Scaffold(
-      appBar: AppBar(
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
           backgroundColor: Color.fromRGBO(98, 103, 124, 1.0),
           title: Text("红外测温App"),
-          centerTitle: true,
           actions: [
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: IconButton(
-                icon: Icon(Icons.list, size: 28),
-                splashRadius: 30,
-                onPressed: () {},
-              ),
+            PopupMenuButton(
+              itemBuilder: (context) =>
+                  [PopupMenuItem(child: Text("信息录入"), value: "信息录入")],
+              onSelected: (value) {
+                showDialog(
+                    context: context,
+                    barrierDismissible: true,
+                    builder: (_) => InfoDialog());
+              },
             )
-          ]),
-      backgroundColor: Color.fromRGBO(98, 103, 124, 1.0),
-      body: ChangeNotifierProvider<TempNotifier>(
-          create: (ctx) => TempNotifier(),
-          child: SafeArea(child: TempWidget())),
+          ],
+          bottom: TabBar(
+            tabs: [
+              Tab(text: '测量'),
+              Tab(text: '用户'),
+              Tab(text: '统计'),
+            ],
+          ),
+        ),
+        backgroundColor: Color.fromRGBO(98, 103, 124, 1.0),
+        body: TabBarView(children: [
+          ChangeNotifierProvider<TempNotifier>(
+              create: (ctx) => TempNotifier(),
+              child: SafeArea(child: TempWidget())),
+          Container(),
+          Container()
+        ]),
+      ),
     );
   }
 }
@@ -112,13 +131,13 @@ class TempWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     var notifier = Provider.of<TempNotifier>(context, listen: false);
     var canvasHeight = TempApp.screenWidth * 4 / 3;
+    var side = BorderSide(color: Colors.blue, width: TempApp.decorationWidth);
     return Column(
       children: [
         Container(
           decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(
-                  color: Colors.blue, width: TempApp.decorationWidth)),
+              border: Border(left: side, right: side, bottom: side)),
           child: Stack(
             children: [
               ValueListenableBuilder(
@@ -175,7 +194,7 @@ class TempWidget extends StatelessWidget {
                             );
                           },
                         ),
-                        SizedBox(height: 15),
+                        SizedBox(height: 10),
                         Text('人脸识别'),
                         ValueListenableBuilder(
                           valueListenable: faceState,
@@ -284,7 +303,7 @@ class TempWidget extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(20)),
                               ),
                             ),
-                            SizedBox(height: 15),
+                            SizedBox(height: 10),
                             Text('插值算法'),
                             SizedBox(
                               width: 75,
