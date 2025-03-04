@@ -1,16 +1,19 @@
-# temperature_app
+# TempApp 体温监测系统
 
-A new Flutter application.
+1. 本应用收集来自**Arduino ESP32红外传感器**的数据，并实现了多种**矩阵插值**和**伪彩色编码**算法用于生成红外图像
 
-## Getting Started
+2. 本应用使用**Google ML Kit**对系统相机进行**人脸识别**，并将红外图像和相机图像叠加后统一展示，用户可以通过"拍照"记录当前温度数据并上传至mysql后端
 
-This project is a starting point for a Flutter application.
+3. 后端使用**Gorm + Gin**实现，并通过**Prometheus + Grafana**进行**数据监控和可视化**，可以在app的webview中查看
 
-A few resources to get you started if this is your first Flutter project:
+   > 后端仓库在[这里](https://github.com/cjdjczym/TempBackend)
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+***
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![](assets/1.jpg)
+
+![](assets/2.jpg)
+
+![](assets/3.jpg)
+
+![](assets/4.jpg)
